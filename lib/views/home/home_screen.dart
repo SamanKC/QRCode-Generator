@@ -114,62 +114,64 @@ class _QRHomePageState extends State<QRHomePage> {
           final double buttonBorderWidth = constraints.maxWidth * 0.004;
 
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Container(
-                  width: containerSize,
-                  height: containerSize,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: AppColors.primaryColor,
-                      width: buttonBorderWidth,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Container(
+                    width: containerSize,
+                    height: containerSize,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: AppColors.primaryColor,
+                        width: buttonBorderWidth,
+                      ),
+                      borderRadius: BorderRadius.circular(containerSize * 0.05),
                     ),
-                    borderRadius: BorderRadius.circular(containerSize * 0.05),
+                    child: _generatedQRCode.isNotEmpty
+                        ? QrImageView(
+                            data: _generatedQRCode,
+                            version: QrVersions.auto,
+                            size: containerSize,
+                          )
+                        : Icon(
+                            Icons.qr_code_scanner,
+                            size: iconSize,
+                            color: AppColors.primaryColor,
+                          ),
                   ),
-                  child: _generatedQRCode.isNotEmpty
-                      ? QrImageView(
-                          data: _generatedQRCode,
-                          version: QrVersions.auto,
-                          size: containerSize,
-                        )
-                      : Icon(
-                          Icons.qr_code_scanner,
-                          size: iconSize,
-                          color: AppColors.primaryColor,
-                        ),
-                ),
-                const SizedBox(height: 20.0),
-                Text(
-                  'Generate QR Code',
-                  style: TextStyle(
-                    fontSize: titleFontSize,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 10.0),
-                Text(
-                  'Tap the button below to generate QR codes',
-                  style: TextStyle(fontSize: subtitleFontSize),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 30.0),
-                OutlinedButton(
-                  onPressed: _showTextDialog,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primaryColor,
-                    side: BorderSide(
-                      color: AppColors.primaryColor,
-                      width: buttonBorderWidth,
-                    ),
-                    fixedSize: Size(constraints.maxWidth * 0.5, buttonHeight),
-                  ),
-                  child: Text(
+                  const SizedBox(height: 20.0),
+                  Text(
                     'Generate QR Code',
-                    style: TextStyle(fontSize: buttonFontSize),
+                    style: TextStyle(
+                      fontSize: titleFontSize,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 10.0),
+                  Text(
+                    'Tap the button below to generate QR codes',
+                    style: TextStyle(fontSize: subtitleFontSize),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 30.0),
+                  OutlinedButton(
+                    onPressed: _showTextDialog,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primaryColor,
+                      side: BorderSide(
+                        color: AppColors.primaryColor,
+                        width: buttonBorderWidth,
+                      ),
+                      fixedSize: Size(constraints.maxWidth * 0.5, buttonHeight),
+                    ),
+                    child: Text(
+                      'Generate QR Code',
+                      style: TextStyle(fontSize: buttonFontSize),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
