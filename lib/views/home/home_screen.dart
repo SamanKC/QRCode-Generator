@@ -1,7 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:qrcodegenerator/views/home/scan_tab.dart';
 import '../../constants/app_colors.dart';
 import '../about/about_screen.dart';
+import '../widgets/scanner_error_widgert.dart';
+import 'foundcode_screen.dart';
 
 class QRHomePage extends StatefulWidget {
   const QRHomePage({Key? key}) : super(key: key);
@@ -10,8 +17,69 @@ class QRHomePage extends StatefulWidget {
   _QRHomePageState createState() => _QRHomePageState();
 }
 
-class _QRHomePageState extends State<QRHomePage> {
+class _QRHomePageState extends State<QRHomePage>
+    with SingleTickerProviderStateMixin {
   String _generatedQRCode = '';
+  int _selectedTabIndex = 0;
+
+  TabController? _tabController;
+  Barcode? barCode;
+  BarcodeCapture? barCodeCapture;
+
+  MobileScannerArguments? arguments;
+
+  bool isStarted = true;
+  double _zoomFactor = 0.0;
+  bool _screenOpened = false;
+
+  MobileScannerController cameraController = MobileScannerController();
+  // final MobileScannerController controller = MobileScannerController(
+  //   torchEnabled: false,
+  //   // formats: [BarcodeFormat.qrCode]
+  //   // facing: CameraFacing.front,
+  //   detectionSpeed: DetectionSpeed.normal,
+  //   // detectionTimeoutMs: 1000,
+  //   returnImage: true,
+  // );
+
+  // void _startOrStop() {
+  //   try {
+  //     if (isStarted) {
+  //       controller.stop();
+  //     } else {
+  //       controller.start();
+  //     }
+  //     setState(() {
+  //       isStarted = !isStarted;
+  //     });
+  //   } on Exception catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text('Something went wrong! $e'),
+  //         backgroundColor: Colors.red,
+  //       ),
+  //     );
+  //   }
+  // }
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController!.addListener(_handleTabSelection);
+  }
+
+  @override
+  void dispose() {
+    cameraController.dispose();
+    super.dispose();
+  }
+
+  void _handleTabSelection() {
+    setState(() {
+      _selectedTabIndex = _tabController!.index;
+    });
+  }
 
   void _generateQRCode(String data) {
     setState(() {
@@ -102,79 +170,275 @@ class _QRHomePageState extends State<QRHomePage> {
             icon: const Icon(Icons.app_settings_alt_outlined),
           )
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Generator'),
+            Tab(text: 'Scanner'),
+          ],
+        ),
       ),
-      body: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final double containerSize = constraints.maxWidth * 0.5;
-          final double iconSize = constraints.maxWidth * 0.25;
-          final double titleFontSize = constraints.maxWidth * 0.06;
-          final double subtitleFontSize = constraints.maxWidth * 0.04;
-          final double buttonFontSize = constraints.maxWidth * 0.05;
-          final double buttonHeight = constraints.maxHeight * 0.05;
-          final double buttonBorderWidth = constraints.maxWidth * 0.004;
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildGeneratorTab(),
+          _buildScannerTab(),
 
-          return Center(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Container(
-                    width: containerSize,
-                    height: containerSize,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: AppColors.primaryColor,
-                        width: buttonBorderWidth,
-                      ),
-                      borderRadius: BorderRadius.circular(containerSize * 0.05),
+          // cameraView(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGeneratorTab() {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double containerSize = constraints.maxWidth * 0.5;
+        final double iconSize = constraints.maxWidth * 0.25;
+        final double titleFontSize = constraints.maxWidth * 0.06;
+        final double subtitleFontSize = constraints.maxWidth * 0.04;
+        final double buttonFontSize = constraints.maxWidth * 0.05;
+        final double buttonHeight = constraints.maxHeight * 0.05;
+        final double buttonBorderWidth = constraints.maxWidth * 0.004;
+
+        return Center(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Container(
+                  width: containerSize,
+                  height: containerSize,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: AppColors.primaryColor,
+                      width: buttonBorderWidth,
                     ),
-                    child: _generatedQRCode.isNotEmpty
-                        ? QrImageView(
-                            data: _generatedQRCode,
-                            version: QrVersions.auto,
-                            size: containerSize,
-                          )
-                        : Icon(
-                            Icons.qr_code_scanner,
-                            size: iconSize,
-                            color: AppColors.primaryColor,
-                          ),
+                    borderRadius: BorderRadius.circular(containerSize * 0.05),
                   ),
-                  const SizedBox(height: 20.0),
-                  Text(
+                  child: _generatedQRCode.isNotEmpty
+                      ? QrImageView(
+                          data: _generatedQRCode,
+                          version: QrVersions.auto,
+                          size: containerSize,
+                        )
+                      : Icon(
+                          Icons.qr_code_scanner,
+                          size: iconSize,
+                          color: AppColors.primaryColor,
+                        ),
+                ),
+                const SizedBox(height: 20.0),
+                Text(
+                  'Generate QR Code',
+                  style: TextStyle(
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10.0),
+                Text(
+                  'Tap the button below to generate QR codes',
+                  style: TextStyle(fontSize: subtitleFontSize),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 30.0),
+                OutlinedButton(
+                  onPressed: _showTextDialog,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryColor,
+                    side: BorderSide(
+                      color: AppColors.primaryColor,
+                      width: buttonBorderWidth,
+                    ),
+                    fixedSize: Size(constraints.maxWidth * 0.5, buttonHeight),
+                  ),
+                  child: Text(
                     'Generate QR Code',
-                    style: TextStyle(
-                      fontSize: titleFontSize,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: buttonFontSize),
                   ),
-                  const SizedBox(height: 10.0),
-                  Text(
-                    'Tap the button below to generate QR codes',
-                    style: TextStyle(fontSize: subtitleFontSize),
-                    textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildScannerTab() {
+    return scanCamera();
+  }
+
+  void _foundCode(BarcodeCapture barcode) {
+    ///open screen
+    if (!_screenOpened) {
+      final code = barcode.barcodes[0].rawValue ?? "---";
+      debugPrint('Barcode found! $code');
+
+      _screenOpened = true;
+
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => FoundCodeScreen(
+                    value: code,
+                    screenClosed: _screenWasClosed,
+                  )));
+    }
+  }
+
+  void _screenWasClosed() {
+    _screenOpened = false;
+  }
+
+  Widget scanCamera() {
+    return Expanded(
+      child: Column(
+        children: [
+          Flexible(
+            // height: MediaQuery.of(context).size.height / 2,
+            child: MobileScanner(
+              controller: cameraController,
+              fit: BoxFit.cover,
+              onDetect: _foundCode,
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              alignment: Alignment.bottomCenter,
+              height: 100,
+              color: Colors.deepOrange,
+              child: Column(
+                children: [
+                  Slider(
+                    value: _zoomFactor,
+                    onChanged: (value) {
+                      setState(() {
+                        _zoomFactor = value;
+                        cameraController.setZoomScale(value);
+                      });
+                    },
                   ),
-                  const SizedBox(height: 30.0),
-                  OutlinedButton(
-                    onPressed: _showTextDialog,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primaryColor,
-                      side: BorderSide(
-                        color: AppColors.primaryColor,
-                        width: buttonBorderWidth,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      IconButton(
+                        color: Colors.white,
+                        icon: ValueListenableBuilder(
+                          valueListenable: cameraController.torchState,
+                          builder: (context, state, child) {
+                            if (state == null) {
+                              return const Icon(
+                                Icons.flash_off,
+                                color: Colors.grey,
+                              );
+                            }
+                            switch (state) {
+                              case TorchState.off:
+                                return const Icon(
+                                  Icons.flash_off,
+                                  color: Colors.grey,
+                                );
+                              case TorchState.on:
+                                return const Icon(
+                                  Icons.flash_on,
+                                  color: Colors.yellow,
+                                );
+                            }
+                          },
+                        ),
+                        iconSize: 32.0,
+                        onPressed: () => cameraController.toggleTorch(),
                       ),
-                      fixedSize: Size(constraints.maxWidth * 0.5, buttonHeight),
-                    ),
-                    child: Text(
-                      'Generate QR Code',
-                      style: TextStyle(fontSize: buttonFontSize),
-                    ),
+                      IconButton(
+                        color: Colors.white,
+                        icon: isStarted
+                            ? const Icon(Icons.stop)
+                            : const Icon(Icons.play_arrow),
+                        iconSize: 32.0,
+                        onPressed: () => setState(() {
+                          isStarted
+                              ? cameraController.stop()
+                              : cameraController.start();
+                          isStarted = !isStarted;
+                        }),
+                      ),
+                      Center(
+                        child: SizedBox(
+                          // width: MediaQuery.of(context).size.width - 200,
+                          height: 40,
+                          child: FittedBox(
+                            child: Text(
+                              'Scan',
+                              overflow: TextOverflow.fade,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineMedium!
+                                  .copyWith(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        color: Colors.white,
+                        icon: const Icon(Icons.image),
+                        iconSize: 28.0,
+                        onPressed: () async {
+                          final ImagePicker picker = ImagePicker();
+                          // Pick an image
+                          final XFile? image = await picker.pickImage(
+                            source: ImageSource.gallery,
+                          );
+                          if (image != null) {
+                            if (await cameraController
+                                .analyzeImage(image.path)) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Barcode found!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('No barcode found!'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                      IconButton(
+                        color: Colors.white,
+                        icon: ValueListenableBuilder(
+                          valueListenable: cameraController.cameraFacingState,
+                          builder: (context, state, child) {
+                            if (state == null) {
+                              return const Icon(Icons.camera_front);
+                            }
+                            switch (state) {
+                              case CameraFacing.front:
+                                return const Icon(Icons.camera_front);
+                              case CameraFacing.back:
+                                return const Icon(Icons.camera_rear);
+                            }
+                          },
+                        ),
+                        iconSize: 32.0,
+                        onPressed: () => cameraController.switchCamera(),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
