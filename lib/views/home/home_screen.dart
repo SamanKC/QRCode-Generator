@@ -1,10 +1,14 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qrcodegenerator/views/home/scan_tab.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../constants/app_colors.dart';
 import '../about/about_screen.dart';
 import '../widgets/scanner_error_widgert.dart';
@@ -87,6 +91,69 @@ class _QRHomePageState extends State<QRHomePage>
     });
   }
 
+  void copyToClipboard(String text) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Text copied to clipboard")),
+    );
+  }
+
+  Future<void> saveToGallery() async {
+    try {
+      final qrImageData =
+          await _generateQrImageData(_generatedQRCode.toString());
+      final result = await ImageGallerySaver.saveImage(
+        Uint8List.fromList(qrImageData!),
+        quality: 100,
+        name: "QR_Code_${DateTime.now().millisecondsSinceEpoch}.jpg",
+      );
+      if (result['isSuccess']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Image saved to gallery")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to save image")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to save image")),
+      );
+    }
+  }
+
+  Future<Uint8List?> _generateQrImageData(data) async {
+    try {
+      final qrCode = await QrPainter(
+        data: data,
+        version: QrVersions.auto,
+        gapless: true,
+        dataModuleStyle: const QrDataModuleStyle(
+          color: Colors.white,
+          dataModuleShape: QrDataModuleShape.square,
+        ),
+        eyeStyle:
+            const QrEyeStyle(color: Colors.white, eyeShape: QrEyeShape.square),
+      ).toImageData(200);
+      return qrCode!.buffer.asUint8List();
+    } catch (e) {
+      print("Error generating QR code: $e");
+      return null;
+    }
+  }
+
+  void shareCode() async {
+    try {
+      await Share.share(_generatedQRCode.toString());
+    } catch (e) {
+      print("Error sharing QR code: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to share QR code")),
+      );
+    }
+  }
+
   void _showTextDialog() {
     showDialog(
       context: context,
@@ -142,6 +209,12 @@ class _QRHomePageState extends State<QRHomePage>
                         String inputText = textController.text;
                         Navigator.pop(context);
                         _generateQRCode(inputText);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('QRCode Generated!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
                       },
                     ),
                   ],
@@ -257,6 +330,25 @@ class _QRHomePageState extends State<QRHomePage>
                     'Generate QR Code',
                     style: TextStyle(fontSize: buttonFontSize),
                   ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        copyToClipboard(_generatedQRCode.toString());
+                      },
+                      icon: const Icon(Icons.copy),
+                    ),
+                    IconButton(
+                      onPressed: saveToGallery,
+                      icon: const Icon(Icons.save),
+                    ),
+                    IconButton(
+                      onPressed: shareCode,
+                      icon: const Icon(Icons.share),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -397,7 +489,7 @@ class _QRHomePageState extends State<QRHomePage>
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Barcode found!'),
+                                  content: Text('QRCode found!'),
                                   backgroundColor: Colors.green,
                                 ),
                               );
@@ -405,7 +497,7 @@ class _QRHomePageState extends State<QRHomePage>
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('No barcode found!'),
+                                  content: Text('No QRCode found!'),
                                   backgroundColor: Colors.red,
                                 ),
                               );
