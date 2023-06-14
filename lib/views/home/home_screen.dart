@@ -1,17 +1,18 @@
-import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:qrcodegenerator/views/home/scan_tab.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../bloc/permission_bloc.dart';
+import '../../bloc/permission_event.dart';
+import '../../bloc/permission_state.dart';
 import '../../constants/app_colors.dart';
 import '../about/about_screen.dart';
-import '../widgets/scanner_error_widgert.dart';
 import 'foundcode_screen.dart';
 
 class QRHomePage extends StatefulWidget {
@@ -23,6 +24,26 @@ class QRHomePage extends StatefulWidget {
 
 class _QRHomePageState extends State<QRHomePage>
     with SingleTickerProviderStateMixin {
+  final RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
+
+  void _onRefresh() async {
+    // monitor network fetch
+    await Future.delayed(const Duration(milliseconds: 1000));
+
+    context.read<PermissionBloc>().add(CheckPermissionEvent());
+    // if failed,use refreshFailed()
+    _refreshController.refreshCompleted();
+  }
+
+  void _onLoading() async {
+    // monitor network fetch
+    await Future.delayed(const Duration(milliseconds: 1000));
+    // if failed,use loadFailed(),if no data return,use LoadNodata()
+    if (mounted) setState(() {});
+    _refreshController.loadComplete();
+  }
+
   String _generatedQRCode = '';
   int _selectedTabIndex = 0;
 
@@ -37,51 +58,83 @@ class _QRHomePageState extends State<QRHomePage>
   bool _screenOpened = false;
 
   MobileScannerController cameraController = MobileScannerController();
-  // final MobileScannerController controller = MobileScannerController(
-  //   torchEnabled: false,
-  //   // formats: [BarcodeFormat.qrCode]
-  //   // facing: CameraFacing.front,
-  //   detectionSpeed: DetectionSpeed.normal,
-  //   // detectionTimeoutMs: 1000,
-  //   returnImage: true,
-  // );
 
-  // void _startOrStop() {
-  //   try {
-  //     if (isStarted) {
-  //       controller.stop();
-  //     } else {
-  //       controller.start();
-  //     }
-  //     setState(() {
-  //       isStarted = !isStarted;
-  //     });
-  //   } on Exception catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text('Something went wrong! $e'),
-  //         backgroundColor: Colors.red,
-  //       ),
-  //     );
-  //   }
-  // }
+  // Declare the boolean variable to track scanning status
+  bool isScanning = false;
+
+// Method to start scanning
+  void startScanning() {
+    if (!isScanning) {
+      isScanning = true;
+      // Call the start() method of the scanner here
+      cameraController.start();
+    }
+  }
+
+// Method to stop scanning
+  void stopScanning() {
+    if (isScanning) {
+      isScanning = false;
+      // Call the stop() method of the scanner here
+      cameraController.stop();
+    }
+  }
+
+// Method to handle scan completion
+  void onScanComplete(String result) {
+    // Process the scan result here
+    // ...
+
+    // Set isScanning back to false
+    isScanning = false;
+  }
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController!.addListener(_handleTabSelection);
+    // checkCameraPermission();
   }
 
   @override
   void dispose() {
     cameraController.dispose();
+
     super.dispose();
   }
+
+  // void _handleTabSelection() {
+  //   setState(() {
+  //     _selectedTabIndex = _tabController!.index;
+  //     if (_selectedTabIndex == 1) {
+  //       // Second tab is selected, check camera permission
+  //       // checkCameraPermission();
+  //       // context.read<PermissionBloc>().askPermission();
+  //       context.read<PermissionBloc>().add(RequestPermissionEvent());
+  //       _initializeMobileScannerController();
+  //     } else {
+  //       // First tab was unselected, so we need to re-initialize controller
+  //       cameraController.dispose();
+  //     }
+  //   });
+  // }
 
   void _handleTabSelection() {
     setState(() {
       _selectedTabIndex = _tabController!.index;
+      if (_selectedTabIndex == 1) {
+        // Second tab is selected, check camera permission
+        // checkCameraPermission();
+        // context.read<PermissionBloc>().askPermission();
+        context.read<PermissionBloc>().add(RequestPermissionEvent());
+      } else {
+        // First tab was unselected, so we need to re-initialize the controller
+        if (cameraController != null) {
+          cameraController.dispose();
+        }
+        cameraController = MobileScannerController();
+      }
     });
   }
 
@@ -359,14 +412,66 @@ class _QRHomePageState extends State<QRHomePage>
   }
 
   Widget _buildScannerTab() {
-    return scanCamera();
+    return BlocBuilder<PermissionBloc, PermissionState>(
+      builder: (context, state) {
+        if (state is PermissionGrantedState) {
+          return scanCamera();
+        } else if (state is PermissionDeniedState) {
+          return _buildPermissionRequiredWidget(state);
+        } else if (state is PermissionPermanentlyDeniedState) {
+          return _buildPermissionRequiredWidget(state);
+        } else {
+          return const Center(child: CircularProgressIndicator());
+        }
+      },
+    );
+  }
+
+  Widget _buildPermissionRequiredWidget(PermissionState state) {
+    return SmartRefresher(
+      enablePullDown: true,
+      enablePullUp: true,
+      controller: _refreshController,
+      onRefresh: _onRefresh,
+      onLoading: _onLoading,
+      header: const WaterDropHeader(),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              state is PermissionDeniedState
+                  ? state.deniedMessage
+                  : state is PermissionPermanentlyDeniedState
+                      ? state.permanentlyDeniedMessage
+                      : "",
+              style: const TextStyle(
+                  fontSize: 26.0, fontStyle: FontStyle.italic, height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16.0),
+            ElevatedButton(
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
+              onPressed: () {
+                state is PermissionDeniedState
+                    ? context.read<PermissionBloc>().add(CheckPermissionEvent())
+                    : state is PermissionPermanentlyDeniedState
+                        ? openAppSettings()
+                        : state is PermissionGrantedState;
+              },
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _foundCode(BarcodeCapture barcode) {
     ///open screen
     if (!_screenOpened) {
-      final code = barcode.barcodes[0].rawValue ?? "---";
-      debugPrint('Barcode found! $code');
+      final code = barcode.barcodes[0].rawValue ?? "No code available";
 
       _screenOpened = true;
 

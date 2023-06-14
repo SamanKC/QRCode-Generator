@@ -1,16 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../constants/app_colors.dart';
+import '../../cubit/theme_cubit.dart';
+import '../../cubit/theme_state.dart';
 
-class AboutPage extends StatelessWidget {
-  const AboutPage({super.key});
+class AboutPage extends StatefulWidget {
+  const AboutPage({Key? key}) : super(key: key);
 
+  @override
+  _AboutPageState createState() => _AboutPageState();
+}
+
+class _AboutPageState extends State<AboutPage> {
+  bool isDarkTheme = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('About This App'),
-        backgroundColor: AppColors.primaryColor,
-      ),
+          title: const Text('About This App'),
+          backgroundColor: AppColors.primaryColor,
+          actions: [
+            IconButton(
+                icon: const Icon(Icons.brightness_6),
+                onPressed: () => context.read<ThemeCubit>().toggleTheme()),
+          ]),
       body: const Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
@@ -25,7 +38,7 @@ class AboutPage extends StatelessWidget {
             ),
             SizedBox(height: 16.0),
             Text(
-              'Version: 1.0.0',
+              'Version: 1.0.0+1',
               style: TextStyle(
                 fontSize: 18.0,
               ),
@@ -61,6 +74,7 @@ class AboutPage extends StatelessWidget {
                 fontSize: 16.0,
               ),
             ),
+            SizedBox(height: 16.0),
           ],
         ),
       ),
