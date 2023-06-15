@@ -130,184 +130,190 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
           icon: const Icon(Icons.arrow_back_outlined),
         ),
       ),
-      body: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              "Scanned Code:",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+      body: SingleChildScrollView(
+        child: Container(
+          alignment: Alignment.center,
+          color: Colors.white,
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                "Scanned Code:",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Card(
-              color: Colors.white,
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Container(
+              const SizedBox(height: 20),
+              Card(
                 color: Colors.white,
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    QrImageView(
-                      backgroundColor: Colors.white,
-                      data: widget.value.toString(),
-                      version: QrVersions.auto,
-                      size: 200.0,
-                    ),
-                    const SizedBox(height: 20),
-                    widget.wifiInfo!.password!.isNotEmpty ||
-                            widget.wifiInfo!.password != ''
-                        ? Column(
-                            children: [
-                              SelectableText(
-                                "SSID: ${widget.wifiInfo!.ssid}",
-                                style: const TextStyle(
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      Colors.blue, // Customize the text color
-                                ),
-                              ),
-                              const SizedBox(
-                                  height: 16), // Add spacing between elements
-                              SelectableText(
-                                "Password: ${widget.wifiInfo!.password}",
-                                style: const TextStyle(
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      Colors.green, // Customize the text color
-                                ),
-                              ),
-                              const SizedBox(
-                                  height: 16), // Add spacing between elements
-                              Text(
-                                "Security: ${widget.wifiInfo!.authenticationType}",
-                                style: const TextStyle(
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors
-                                      .deepOrange, // Customize the text color
-                                ),
-                              ),
-                              // ElevatedButton(
-                              //   onPressed: _isConnecting ? null : connectToWifi,
-                              //   child: _isConnecting
-                              //       ? CircularProgressIndicator()
-                              //       : Text('Connect to Wi-Fi'),
-                              // ),
-                            ],
-                          )
-                        : widget.value.toString().contains('https:')
-                            ? SelectableText(
-                                widget.value.toString(),
-                                style: const TextStyle(
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                                onTap: () async {
-                                  final uri = widget.value.toString();
-                                  log(uri);
-
-                                  if (await canLaunchUrl(Uri.parse(uri))) {
-                                    log(uri);
-                                    await launchUrl(Uri.parse(uri));
-                                  } else {
-                                    ScaffoldMessenger.of(widget.ctx)
-                                        .showSnackBar(const SnackBar(
-                                            content: Text("Invalid url! ")));
-                                  }
-                                },
-                              )
-                            : widget.bankInfo!.accountNumber != "" ||
-                                    widget.bankInfo!.accountNumber!.isNotEmpty
-                                ? ListView(
-                                    shrinkWrap: true,
-                                    children: [
-                                      SelectableText(
-                                        "AccountNumber: ${widget.bankInfo!.accountNumber}",
-                                        style: const TextStyle(
-                                          fontSize: 26,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.blue,
-                                        ),
-                                      ),
-                                      const SizedBox(
-                                          height:
-                                              16), // Add spacing between elements
-                                      SelectableText(
-                                        "AccountName: ${widget.bankInfo!.accountName}",
-                                        style: const TextStyle(
-                                          fontSize: 26,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors
-                                              .green, // Customize the text color
-                                        ),
-                                      ),
-                                      const SizedBox(
-                                          height:
-                                              16), // Add spacing between elements
-                                      Text(
-                                        "AccountType: ${widget.bankInfo!.accountType}",
-                                        style: TextStyle(
-                                          fontSize: 26,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.grey.shade700,
-                                        ),
-                                      ),
-                                      // ElevatedButton(
-                                      //   onPressed: _isConnecting ? null : connectToWifi,
-                                      //   child: _isConnecting
-                                      //       ? CircularProgressIndicator()
-                                      //       : Text('Connect to Wi-Fi'),
-                                      // ),
-                                    ],
-                                  )
-                                : SelectableText(
-                                    widget.value.toString(),
-                                    style: const TextStyle(
-                                      fontSize: 30,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    textAlign: TextAlign.center,
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      QrImageView(
+                        backgroundColor: Colors.white,
+                        data: widget.value.toString(),
+                        version: QrVersions.auto,
+                        size: 200.0,
+                      ),
+                      const SizedBox(height: 20),
+                      widget.wifiInfo!.password!.isNotEmpty ||
+                              widget.wifiInfo!.password != ''
+                          ? Column(
+                              children: [
+                                SelectableText(
+                                  "SSID: ${widget.wifiInfo!.ssid}",
+                                  style: const TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Colors.blue, // Customize the text color
                                   ),
-                    const SizedBox(height: 20),
-                  ],
+                                ),
+                                const SizedBox(
+                                    height: 16), // Add spacing between elements
+                                SelectableText(
+                                  "Password: ${widget.wifiInfo!.password}",
+                                  style: const TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors
+                                        .green, // Customize the text color
+                                  ),
+                                ),
+                                const SizedBox(
+                                    height: 16), // Add spacing between elements
+                                Text(
+                                  "Security: ${widget.wifiInfo!.authenticationType}",
+                                  style: const TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors
+                                        .deepOrange, // Customize the text color
+                                  ),
+                                ),
+                                // ElevatedButton(
+                                //   onPressed: _isConnecting ? null : connectToWifi,
+                                //   child: _isConnecting
+                                //       ? CircularProgressIndicator()
+                                //       : Text('Connect to Wi-Fi'),
+                                // ),
+                              ],
+                            )
+                          : widget.value.toString().contains('https:')
+                              ? SelectableText(
+                                  widget.value.toString(),
+                                  style: const TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  onTap: () async {
+                                    final uri = widget.value.toString();
+                                    log(uri);
+
+                                    if (await canLaunchUrl(Uri.parse(uri))) {
+                                      log(uri);
+                                      await launchUrl(Uri.parse(uri));
+                                    } else {
+                                      ScaffoldMessenger.of(widget.ctx)
+                                          .showSnackBar(const SnackBar(
+                                              content: Text("Invalid url! ")));
+                                    }
+                                  },
+                                )
+                              : widget.bankInfo!.accountNumber != "" ||
+                                      widget.bankInfo!.accountNumber!.isNotEmpty
+                                  ? ListView(
+                                      shrinkWrap: true,
+                                      children: [
+                                        SelectableText(
+                                          "AccountNumber: ${widget.bankInfo!.accountNumber}",
+                                          style: const TextStyle(
+                                            fontSize: 26,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                        const SizedBox(
+                                            height:
+                                                16), // Add spacing between elements
+                                        SelectableText(
+                                          "AccountName: ${widget.bankInfo!.accountName}",
+                                          style: const TextStyle(
+                                            fontSize: 26,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors
+                                                .green, // Customize the text color
+                                          ),
+                                        ),
+                                        const SizedBox(
+                                            height:
+                                                16), // Add spacing between elements
+                                        Text(
+                                          "AccountType: ${widget.bankInfo!.accountType}",
+                                          style: TextStyle(
+                                            fontSize: 26,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey.shade700,
+                                          ),
+                                        ),
+                                        // ElevatedButton(
+                                        //   onPressed: _isConnecting ? null : connectToWifi,
+                                        //   child: _isConnecting
+                                        //       ? CircularProgressIndicator()
+                                        //       : Text('Connect to Wi-Fi'),
+                                        // ),
+                                      ],
+                                    )
+                                  : SelectableText(
+                                      widget.value.toString(),
+                                      style: const TextStyle(
+                                        fontSize: 30,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  onPressed: () {
-                    widget.wifiInfo!.password!.isNotEmpty ||
-                            widget.wifiInfo!.password != null
-                        ? copyToClipboard(widget.wifiInfo!.password.toString())
-                        : copyToClipboard(widget.value.toString());
-                  },
-                  icon: const Icon(Icons.copy),
-                ),
-                IconButton(
-                  onPressed: saveToGallery,
-                  icon: const Icon(Icons.save),
-                ),
-                IconButton(
-                  onPressed: shareCode,
-                  icon: const Icon(Icons.share),
-                ),
-              ],
-            ),
-          ],
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      widget.wifiInfo!.password!.isNotEmpty
+                          ? copyToClipboard(
+                              widget.wifiInfo!.password.toString())
+                          : widget.bankInfo!.accountNumber!.isNotEmpty
+                              ? copyToClipboard(
+                                  widget.bankInfo!.accountNumber!.toString())
+                              : copyToClipboard(widget.value.toString());
+                    },
+                    icon: const Icon(Icons.copy),
+                  ),
+                  IconButton(
+                    onPressed: saveToGallery,
+                    icon: const Icon(Icons.save),
+                  ),
+                  IconButton(
+                    onPressed: shareCode,
+                    icon: const Icon(Icons.share),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

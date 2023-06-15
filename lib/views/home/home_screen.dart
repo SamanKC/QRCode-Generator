@@ -597,6 +597,26 @@ class _QRHomePageState extends State<QRHomePage>
     _screenOpened = false;
   }
 
+  void _startOrStop() {
+    try {
+      if (isStarted) {
+        cameraController.stop();
+      } else {
+        cameraController.start();
+      }
+      setState(() {
+        isStarted = !isStarted;
+      });
+    } on Exception catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Something went wrong! $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Widget scanCamera() {
     return Column(
       children: [
@@ -665,12 +685,7 @@ class _QRHomePageState extends State<QRHomePage>
                           ? const Icon(Icons.stop)
                           : const Icon(Icons.play_arrow),
                       iconSize: 32.0,
-                      onPressed: () => setState(() {
-                        isStarted
-                            ? cameraController.stop()
-                            : cameraController.start();
-                        isStarted = !isStarted;
-                      }),
+                      onPressed: _startOrStop,
                     ),
                     Center(
                       child: SizedBox(
