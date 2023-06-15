@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../constants/app_colors.dart';
 import '../../cubit/theme_cubit.dart';
-import '../../cubit/theme_state.dart';
 
 class AboutPage extends StatefulWidget {
   const AboutPage({Key? key}) : super(key: key);
@@ -38,7 +37,7 @@ class _AboutPageState extends State<AboutPage> {
             ),
             SizedBox(height: 16.0),
             Text(
-              'Version: 1.0.0+1',
+              'Version: 1.0.1+1',
               style: TextStyle(
                 fontSize: 18.0,
               ),

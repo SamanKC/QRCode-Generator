@@ -1,19 +1,30 @@
+import 'dart:developer';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:qrcodegenerator/models/bank_info.dart';
+import 'package:qrcodegenerator/models/wifi_info.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:wifi_iot/wifi_iot.dart';
 
 class FoundCodeScreen extends StatefulWidget {
   final Object value;
   final Function() screenClosed;
+  WifiInfo? wifiInfo;
+  final ctx;
+  BankInfo? bankInfo;
 
-  const FoundCodeScreen({
+  FoundCodeScreen({
     Key? key,
     required this.value,
     required this.screenClosed,
+    this.ctx,
+    this.bankInfo,
+    this.wifiInfo,
   }) : super(key: key);
 
   @override
@@ -21,6 +32,8 @@ class FoundCodeScreen extends StatefulWidget {
 }
 
 class _FoundCodeScreenState extends State<FoundCodeScreen> {
+  bool hasdata = false;
+
   void copyToClipboard(String text) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
@@ -37,11 +50,11 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
         name: "QR_Code_${DateTime.now().millisecondsSinceEpoch}.jpg",
       );
       if (result['isSuccess']) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(widget.ctx).showSnackBar(
           const SnackBar(content: Text("Image saved to gallery")),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(widget.ctx).showSnackBar(
           const SnackBar(content: Text("Failed to save image")),
         );
       }
@@ -81,6 +94,25 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
         const SnackBar(content: Text("Failed to share QR code")),
       );
     }
+  }
+
+  bool _isConnecting = false;
+  void connectToWifi() async {
+    setState(() {
+      _isConnecting = true;
+    });
+
+    try {
+      await WiFiForIoTPlugin.connect(widget.wifiInfo!.ssid!,
+          password: widget.wifiInfo!.password, security: NetworkSecurity.WPA);
+      if (!mounted) return;
+    } catch (e) {
+      log('Failed to connect to Wi-Fi: $e');
+    }
+
+    setState(() {
+      _isConnecting = false;
+    });
   }
 
   @override
@@ -130,13 +162,123 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
                       size: 200.0,
                     ),
                     const SizedBox(height: 20),
-                    Text(
-                      widget.value.toString(),
-                      style: const TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    widget.wifiInfo!.password!.isNotEmpty ||
+                            widget.wifiInfo!.password != ''
+                        ? Column(
+                            children: [
+                              SelectableText(
+                                "SSID: ${widget.wifiInfo!.ssid}",
+                                style: const TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      Colors.blue, // Customize the text color
+                                ),
+                              ),
+                              const SizedBox(
+                                  height: 16), // Add spacing between elements
+                              SelectableText(
+                                "Password: ${widget.wifiInfo!.password}",
+                                style: const TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      Colors.green, // Customize the text color
+                                ),
+                              ),
+                              const SizedBox(
+                                  height: 16), // Add spacing between elements
+                              Text(
+                                "Security: ${widget.wifiInfo!.authenticationType}",
+                                style: const TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors
+                                      .deepOrange, // Customize the text color
+                                ),
+                              ),
+                              // ElevatedButton(
+                              //   onPressed: _isConnecting ? null : connectToWifi,
+                              //   child: _isConnecting
+                              //       ? CircularProgressIndicator()
+                              //       : Text('Connect to Wi-Fi'),
+                              // ),
+                            ],
+                          )
+                        : widget.value.toString().contains('https:')
+                            ? SelectableText(
+                                widget.value.toString(),
+                                style: const TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                                onTap: () async {
+                                  final uri = widget.value.toString();
+                                  log(uri);
+
+                                  if (await canLaunchUrl(Uri.parse(uri))) {
+                                    log(uri);
+                                    await launchUrl(Uri.parse(uri));
+                                  } else {
+                                    ScaffoldMessenger.of(widget.ctx)
+                                        .showSnackBar(const SnackBar(
+                                            content: Text("Invalid url! ")));
+                                  }
+                                },
+                              )
+                            : widget.bankInfo!.accountNumber != "" ||
+                                    widget.bankInfo!.accountNumber!.isNotEmpty
+                                ? ListView(
+                                    shrinkWrap: true,
+                                    children: [
+                                      SelectableText(
+                                        "AccountNumber: ${widget.bankInfo!.accountNumber}",
+                                        style: const TextStyle(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                      const SizedBox(
+                                          height:
+                                              16), // Add spacing between elements
+                                      SelectableText(
+                                        "AccountName: ${widget.bankInfo!.accountName}",
+                                        style: const TextStyle(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors
+                                              .green, // Customize the text color
+                                        ),
+                                      ),
+                                      const SizedBox(
+                                          height:
+                                              16), // Add spacing between elements
+                                      Text(
+                                        "AccountType: ${widget.bankInfo!.accountType}",
+                                        style: TextStyle(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                      // ElevatedButton(
+                                      //   onPressed: _isConnecting ? null : connectToWifi,
+                                      //   child: _isConnecting
+                                      //       ? CircularProgressIndicator()
+                                      //       : Text('Connect to Wi-Fi'),
+                                      // ),
+                                    ],
+                                  )
+                                : SelectableText(
+                                    widget.value.toString(),
+                                    style: const TextStyle(
+                                      fontSize: 30,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -148,7 +290,10 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
               children: [
                 IconButton(
                   onPressed: () {
-                    copyToClipboard(widget.value.toString());
+                    widget.wifiInfo!.password!.isNotEmpty ||
+                            widget.wifiInfo!.password != null
+                        ? copyToClipboard(widget.wifiInfo!.password.toString())
+                        : copyToClipboard(widget.value.toString());
                   },
                   icon: const Icon(Icons.copy),
                 ),

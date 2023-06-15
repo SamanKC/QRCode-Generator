@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,12 +9,16 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:qrcodegenerator/models/bank_info.dart';
+import 'package:qrcodegenerator/models/wifi_info.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:wifi_iot/wifi_iot.dart';
 import '../../bloc/permission_bloc.dart';
 import '../../bloc/permission_event.dart';
 import '../../bloc/permission_state.dart';
 import '../../constants/app_colors.dart';
 import '../about/about_screen.dart';
+import '../widgets/scanner_error_widgert.dart';
 import 'foundcode_screen.dart';
 
 class QRHomePage extends StatefulWidget {
@@ -468,20 +474,122 @@ class _QRHomePageState extends State<QRHomePage>
     );
   }
 
+  WifiInfo extractWifiInfo(String qrCodeData) {
+    RegExp wifiPattern = RegExp(
+      r'^WIFI:S:([^;]+);T:([^;]+);P:([^;]+);',
+      caseSensitive: false,
+      multiLine: true,
+    );
+    log(qrCodeData);
+    if (qrCodeData != '' && qrCodeData.isNotEmpty) {
+      try {
+        Match? match = wifiPattern.firstMatch(qrCodeData);
+        log(match.toString());
+        if (match != null) {
+          String ssid = match.group(1)!;
+          String authenticationType = match.group(2)!;
+          String password = match.group(3)!;
+
+          return (WifiInfo(
+              ssid: ssid,
+              password: password,
+              authenticationType: authenticationType));
+        } else if (match == null) {
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //     const SnackBar(content: Text("Invalid Wi-Fi QR code")));
+          return (WifiInfo(
+              ssid: "",
+              password: "",
+              authenticationType:
+                  "")); // Return null if the Wi-Fi pattern is not found or qrCodeData is null/empty
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Invalid Wi-Fi QR code")));
+        }
+      } catch (e) {
+        log('Error extracting Wi-Fi password: $e');
+      }
+    }
+
+    return (WifiInfo(
+        ssid: "",
+        password: "",
+        authenticationType:
+            "")); // Return null if the Wi-Fi pattern is not found or qrCodeData is null/empty
+  }
+
+  BankInfo extractBankInfo(String qrCodeData) {
+    RegExp bankInfoRegex = RegExp(
+        r'{"accountNumber":"(.+?)","accountName":"(.+?)","bankCode":"(.+?)","accountType":"(.+?)"}',
+        caseSensitive: false,
+        multiLine: true);
+
+    log(qrCodeData);
+    if (qrCodeData != '' && qrCodeData.isNotEmpty) {
+      try {
+        Match? match = bankInfoRegex.firstMatch(qrCodeData);
+        log(match.toString());
+        if (match != null) {
+          String? accountNumber = match.group(1)!;
+          String? accountName = match.group(2)!;
+          // String? bankCode = match.group(3)!;
+          String? accountType = match.group(4)!;
+          print(accountNumber);
+          print(accountName);
+          print(accountType);
+          return (BankInfo(
+              accountNumber: accountNumber,
+              accountName: accountName,
+              accountType: accountType));
+        } else if (match == null) {
+          return (BankInfo(
+              accountName: "", accountNumber: "", accountType: ""));
+        } else {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text("Invalid QR")));
+        }
+      } catch (e) {
+        log('Error extracting bank info: $e');
+      }
+    }
+
+    return (BankInfo(accountName: "", accountNumber: "", accountType: ""));
+  }
+
   void _foundCode(BarcodeCapture barcode) {
+    WifiInfo? wifiInfo;
+
+    BankInfo? bankInfo;
+
     ///open screen
     if (!_screenOpened) {
       final code = barcode.barcodes[0].rawValue ?? "No code available";
 
       _screenOpened = true;
 
+      wifiInfo = extractWifiInfo(code.toString());
+
+      bankInfo = extractBankInfo(code.toString());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('QRCode found!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
       Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => FoundCodeScreen(
-                    value: code,
-                    screenClosed: _screenWasClosed,
-                  )));
+        context,
+        MaterialPageRoute(
+          builder: (context) => FoundCodeScreen(
+            value: code,
+            ctx: context,
+            bankInfo: bankInfo,
+            wifiInfo: wifiInfo,
+            screenClosed: _screenWasClosed,
+          ),
+        ),
+      );
     }
   }
 
@@ -490,153 +598,147 @@ class _QRHomePageState extends State<QRHomePage>
   }
 
   Widget scanCamera() {
-    return Expanded(
-      child: Column(
-        children: [
-          Flexible(
-            // height: MediaQuery.of(context).size.height / 2,
-            child: MobileScanner(
-              controller: cameraController,
-              fit: BoxFit.cover,
-              onDetect: _foundCode,
-            ),
+    return Column(
+      children: [
+        Flexible(
+          // height: MediaQuery.of(context).size.height / 2,
+          child: MobileScanner(
+            controller: cameraController,
+            fit: BoxFit.cover,
+            onDetect: _foundCode,
+            errorBuilder: (context, error, child) {
+              return ScannerErrorWidget(error: error);
+            },
           ),
-          Align(
+        ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
             alignment: Alignment.bottomCenter,
-            child: Container(
-              alignment: Alignment.bottomCenter,
-              height: 100,
-              color: Colors.deepOrange,
-              child: Column(
-                children: [
-                  Slider(
-                    value: _zoomFactor,
-                    onChanged: (value) {
-                      setState(() {
-                        _zoomFactor = value;
-                        cameraController.setZoomScale(value);
-                      });
-                    },
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      IconButton(
-                        color: Colors.white,
-                        icon: ValueListenableBuilder(
-                          valueListenable: cameraController.torchState,
-                          builder: (context, state, child) {
-                            if (state == null) {
+            height: 100,
+            color: Colors.deepOrange,
+            child: Column(
+              children: [
+                Slider(
+                  value: _zoomFactor,
+                  onChanged: (value) {
+                    setState(() {
+                      _zoomFactor = value;
+                      cameraController.setZoomScale(value);
+                    });
+                  },
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    IconButton(
+                      color: Colors.white,
+                      icon: ValueListenableBuilder(
+                        valueListenable: cameraController.torchState,
+                        builder: (context, state, child) {
+                          if (state == null) {
+                            return const Icon(
+                              Icons.flash_off,
+                              color: Colors.grey,
+                            );
+                          }
+                          switch (state) {
+                            case TorchState.off:
                               return const Icon(
                                 Icons.flash_off,
                                 color: Colors.grey,
                               );
-                            }
-                            switch (state) {
-                              case TorchState.off:
-                                return const Icon(
-                                  Icons.flash_off,
-                                  color: Colors.grey,
-                                );
-                              case TorchState.on:
-                                return const Icon(
-                                  Icons.flash_on,
-                                  color: Colors.yellow,
-                                );
-                            }
-                          },
-                        ),
-                        iconSize: 32.0,
-                        onPressed: () => cameraController.toggleTorch(),
-                      ),
-                      IconButton(
-                        color: Colors.white,
-                        icon: isStarted
-                            ? const Icon(Icons.stop)
-                            : const Icon(Icons.play_arrow),
-                        iconSize: 32.0,
-                        onPressed: () => setState(() {
-                          isStarted
-                              ? cameraController.stop()
-                              : cameraController.start();
-                          isStarted = !isStarted;
-                        }),
-                      ),
-                      Center(
-                        child: SizedBox(
-                          // width: MediaQuery.of(context).size.width - 200,
-                          height: 40,
-                          child: FittedBox(
-                            child: Text(
-                              'Scan',
-                              overflow: TextOverflow.fade,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineMedium!
-                                  .copyWith(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        color: Colors.white,
-                        icon: const Icon(Icons.image),
-                        iconSize: 28.0,
-                        onPressed: () async {
-                          final ImagePicker picker = ImagePicker();
-                          // Pick an image
-                          final XFile? image = await picker.pickImage(
-                            source: ImageSource.gallery,
-                          );
-                          if (image != null) {
-                            if (await cameraController
-                                .analyzeImage(image.path)) {
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('QRCode found!'),
-                                  backgroundColor: Colors.green,
-                                ),
+                            case TorchState.on:
+                              return const Icon(
+                                Icons.flash_on,
+                                color: Colors.yellow,
                               );
-                            } else {
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('No QRCode found!'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
                           }
                         },
                       ),
-                      IconButton(
-                        color: Colors.white,
-                        icon: ValueListenableBuilder(
-                          valueListenable: cameraController.cameraFacingState,
-                          builder: (context, state, child) {
-                            if (state == null) {
-                              return const Icon(Icons.camera_front);
-                            }
-                            switch (state) {
-                              case CameraFacing.front:
-                                return const Icon(Icons.camera_front);
-                              case CameraFacing.back:
-                                return const Icon(Icons.camera_rear);
-                            }
-                          },
+                      iconSize: 32.0,
+                      onPressed: () => cameraController.toggleTorch(),
+                    ),
+                    IconButton(
+                      color: Colors.white,
+                      icon: isStarted
+                          ? const Icon(Icons.stop)
+                          : const Icon(Icons.play_arrow),
+                      iconSize: 32.0,
+                      onPressed: () => setState(() {
+                        isStarted
+                            ? cameraController.stop()
+                            : cameraController.start();
+                        isStarted = !isStarted;
+                      }),
+                    ),
+                    Center(
+                      child: SizedBox(
+                        // width: MediaQuery.of(context).size.width - 200,
+                        height: 40,
+                        child: FittedBox(
+                          child: Text(
+                            'Scan',
+                            overflow: TextOverflow.fade,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium!
+                                .copyWith(color: Colors.white),
+                          ),
                         ),
-                        iconSize: 32.0,
-                        onPressed: () => cameraController.switchCamera(),
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                    IconButton(
+                      color: Colors.white,
+                      icon: const Icon(Icons.image),
+                      iconSize: 28.0,
+                      onPressed: () async {
+                        final ImagePicker picker = ImagePicker();
+                        // Pick an image
+                        final XFile? image = await picker.pickImage(
+                          source: ImageSource.gallery,
+                        );
+                        if (image != null) {
+                          if (await cameraController.analyzeImage(image.path)) {
+                            if (!mounted) return;
+                          } else {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('No QRCode found!'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                    IconButton(
+                      color: Colors.white,
+                      icon: ValueListenableBuilder(
+                        valueListenable: cameraController.cameraFacingState,
+                        builder: (context, state, child) {
+                          if (state == null) {
+                            return const Icon(Icons.camera_front);
+                          }
+                          switch (state) {
+                            case CameraFacing.front:
+                              return const Icon(Icons.camera_front);
+                            case CameraFacing.back:
+                              return const Icon(Icons.camera_rear);
+                          }
+                        },
+                      ),
+                      iconSize: 32.0,
+                      onPressed: () => cameraController.switchCamera(),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
