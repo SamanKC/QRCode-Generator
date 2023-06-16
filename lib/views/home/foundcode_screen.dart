@@ -1,15 +1,17 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:developer';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
-import 'package:qrcodegenerator/models/bank_info.dart';
-import 'package:qrcodegenerator/models/wifi_info.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wifi_iot/wifi_iot.dart';
+
+import 'package:qrcodegenerator/models/bank_info.dart';
+import 'package:qrcodegenerator/models/wifi_info.dart';
 
 class FoundCodeScreen extends StatefulWidget {
   final Object value;
@@ -22,9 +24,9 @@ class FoundCodeScreen extends StatefulWidget {
     Key? key,
     required this.value,
     required this.screenClosed,
-    this.ctx,
-    this.bankInfo,
     this.wifiInfo,
+    this.bankInfo,
+    this.ctx,
   }) : super(key: key);
 
   @override
@@ -130,11 +132,12 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
           icon: const Icon(Icons.arrow_back_outlined),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Container(
-          alignment: Alignment.center,
-          color: Colors.white,
-          padding: const EdgeInsets.all(20.0),
+      body: Container(
+        height: MediaQuery.of(context).size.height,
+        alignment: Alignment.center,
+        color: Colors.white,
+        padding: const EdgeInsets.all(20.0),
+        child: SingleChildScrollView(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

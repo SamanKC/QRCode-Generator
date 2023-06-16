@@ -303,10 +303,30 @@ class _QRHomePageState extends State<QRHomePage>
           )
         ],
         bottom: TabBar(
+          enableFeedback: true,
           controller: _tabController,
+          labelStyle: const TextStyle(fontSize: 16),
           tabs: const [
-            Tab(text: 'Generator'),
-            Tab(text: 'Scanner'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.generating_tokens_rounded),
+                SizedBox(width: 5),
+                Tab(
+                  text: 'Generator',
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.qr_code_scanner_rounded),
+                SizedBox(width: 5),
+                Tab(
+                  text: 'Scanner',
+                ),
+              ],
+            )
           ],
         ),
       ),
