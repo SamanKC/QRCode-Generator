@@ -370,6 +370,7 @@ class _QRHomePageState extends State<QRHomePage>
                   ),
                   child: _generatedQRCode.isNotEmpty
                       ? QrImageView(
+                          backgroundColor: Colors.white,
                           data: _generatedQRCode,
                           version: QrVersions.auto,
                           size: containerSize,
@@ -697,7 +698,11 @@ class _QRHomePageState extends State<QRHomePage>
                         },
                       ),
                       iconSize: 32.0,
-                      onPressed: () => cameraController.toggleTorch(),
+                      onPressed: () {
+                        if (isStarted) {
+                          cameraController.toggleTorch();
+                        }
+                      },
                     ),
                     IconButton(
                       color: Colors.white,

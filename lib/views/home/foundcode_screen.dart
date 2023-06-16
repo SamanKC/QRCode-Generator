@@ -135,7 +135,6 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
       body: Container(
         height: MediaQuery.of(context).size.height,
         alignment: Alignment.center,
-        color: Colors.white,
         padding: const EdgeInsets.all(20.0),
         child: SingleChildScrollView(
           child: Column(
@@ -150,13 +149,11 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
               ),
               const SizedBox(height: 20),
               Card(
-                color: Colors.white,
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Container(
-                  color: Colors.white,
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
@@ -238,7 +235,7 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
                                       shrinkWrap: true,
                                       children: [
                                         SelectableText(
-                                          "AccountNumber: ${widget.bankInfo!.accountNumber}",
+                                          "Ac-No. : ${widget.bankInfo!.accountNumber}",
                                           style: const TextStyle(
                                             fontSize: 26,
                                             fontWeight: FontWeight.bold,
@@ -249,7 +246,7 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
                                             height:
                                                 16), // Add spacing between elements
                                         SelectableText(
-                                          "AccountName: ${widget.bankInfo!.accountName}",
+                                          "Account-Name: ${widget.bankInfo!.accountName}",
                                           style: const TextStyle(
                                             fontSize: 26,
                                             fontWeight: FontWeight.bold,
@@ -261,11 +258,11 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
                                             height:
                                                 16), // Add spacing between elements
                                         Text(
-                                          "AccountType: ${widget.bankInfo!.accountType}",
-                                          style: TextStyle(
+                                          "Account-Type: ${widget.bankInfo!.accountType}",
+                                          style: const TextStyle(
                                             fontSize: 26,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.grey.shade700,
+                                            color: Colors.grey,
                                           ),
                                         ),
                                         // ElevatedButton(
