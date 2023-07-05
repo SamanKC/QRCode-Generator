@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:developer';
 import 'dart:ui';
 
@@ -8,7 +7,6 @@ import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:wifi_iot/wifi_iot.dart';
 
 import 'package:qrcodegenerator/models/bank_info.dart';
 import 'package:qrcodegenerator/models/wifi_info.dart';
@@ -34,8 +32,6 @@ class FoundCodeScreen extends StatefulWidget {
 }
 
 class _FoundCodeScreenState extends State<FoundCodeScreen> {
-  bool hasdata = false;
-
   void copyToClipboard(String text) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
@@ -82,7 +78,6 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
       ).toImageData(200);
       return qrCode!.buffer.asUint8List();
     } catch (e) {
-      print("Error generating QR code: $e");
       return null;
     }
   }
@@ -91,30 +86,10 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
     try {
       await Share.share(widget.value.toString());
     } catch (e) {
-      print("Error sharing QR code: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to share QR code")),
       );
     }
-  }
-
-  bool _isConnecting = false;
-  void connectToWifi() async {
-    setState(() {
-      _isConnecting = true;
-    });
-
-    try {
-      await WiFiForIoTPlugin.connect(widget.wifiInfo!.ssid!,
-          password: widget.wifiInfo!.password, security: NetworkSecurity.WPA);
-      if (!mounted) return;
-    } catch (e) {
-      log('Failed to connect to Wi-Fi: $e');
-    }
-
-    setState(() {
-      _isConnecting = false;
-    });
   }
 
   @override
@@ -173,38 +148,27 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
                                   style: const TextStyle(
                                     fontSize: 30,
                                     fontWeight: FontWeight.bold,
-                                    color:
-                                        Colors.blue, // Customize the text color
+                                    color: Colors.blue,
                                   ),
                                 ),
-                                const SizedBox(
-                                    height: 16), // Add spacing between elements
+                                const SizedBox(height: 16),
                                 SelectableText(
                                   "Password: ${widget.wifiInfo!.password}",
                                   style: const TextStyle(
                                     fontSize: 30,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors
-                                        .green, // Customize the text color
+                                    color: Colors.green,
                                   ),
                                 ),
-                                const SizedBox(
-                                    height: 16), // Add spacing between elements
+                                const SizedBox(height: 16),
                                 Text(
                                   "Security: ${widget.wifiInfo!.authenticationType}",
                                   style: const TextStyle(
                                     fontSize: 30,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors
-                                        .deepOrange, // Customize the text color
+                                    color: Colors.deepOrange,
                                   ),
                                 ),
-                                // ElevatedButton(
-                                //   onPressed: _isConnecting ? null : connectToWifi,
-                                //   child: _isConnecting
-                                //       ? CircularProgressIndicator()
-                                //       : Text('Connect to Wi-Fi'),
-                                // ),
                               ],
                             )
                           : widget.value.toString().contains('https:')
@@ -217,10 +181,8 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
                                   textAlign: TextAlign.center,
                                   onTap: () async {
                                     final uri = widget.value.toString();
-                                    log(uri);
 
                                     if (await canLaunchUrl(Uri.parse(uri))) {
-                                      log(uri);
                                       await launchUrl(Uri.parse(uri));
                                     } else {
                                       ScaffoldMessenger.of(widget.ctx)
@@ -242,21 +204,16 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
                                             color: Colors.blue,
                                           ),
                                         ),
-                                        const SizedBox(
-                                            height:
-                                                16), // Add spacing between elements
+                                        const SizedBox(height: 16),
                                         SelectableText(
                                           "Account-Name: ${widget.bankInfo!.accountName}",
                                           style: const TextStyle(
                                             fontSize: 26,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors
-                                                .green, // Customize the text color
+                                            color: Colors.green,
                                           ),
                                         ),
-                                        const SizedBox(
-                                            height:
-                                                16), // Add spacing between elements
+                                        const SizedBox(height: 16),
                                         Text(
                                           "Account-Type: ${widget.bankInfo!.accountType}",
                                           style: const TextStyle(
@@ -265,12 +222,6 @@ class _FoundCodeScreenState extends State<FoundCodeScreen> {
                                             color: Colors.grey,
                                           ),
                                         ),
-                                        // ElevatedButton(
-                                        //   onPressed: _isConnecting ? null : connectToWifi,
-                                        //   child: _isConnecting
-                                        //       ? CircularProgressIndicator()
-                                        //       : Text('Connect to Wi-Fi'),
-                                        // ),
                                       ],
                                     )
                                   : SelectableText(

@@ -11,8 +11,8 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qrcodegenerator/models/bank_info.dart';
 import 'package:qrcodegenerator/models/wifi_info.dart';
+import 'package:qrcodegenerator/views/settings/settings_screen.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:wifi_iot/wifi_iot.dart';
 import '../../bloc/permission_bloc.dart';
 import '../../bloc/permission_event.dart';
 import '../../bloc/permission_state.dart';
@@ -34,18 +34,14 @@ class _QRHomePageState extends State<QRHomePage>
       RefreshController(initialRefresh: false);
 
   void _onRefresh() async {
-    // monitor network fetch
     await Future.delayed(const Duration(milliseconds: 1000));
 
     context.read<PermissionBloc>().add(CheckPermissionEvent());
-    // if failed,use refreshFailed()
     _refreshController.refreshCompleted();
   }
 
   void _onLoading() async {
-    // monitor network fetch
     await Future.delayed(const Duration(milliseconds: 1000));
-    // if failed,use loadFailed(),if no data return,use LoadNodata()
     if (mounted) setState(() {});
     _refreshController.loadComplete();
   }
@@ -65,40 +61,30 @@ class _QRHomePageState extends State<QRHomePage>
 
   MobileScannerController cameraController = MobileScannerController();
 
-  // Declare the boolean variable to track scanning status
   bool isScanning = false;
 
-// Method to start scanning
   void startScanning() {
     if (!isScanning) {
       isScanning = true;
-      // Call the start() method of the scanner here
       cameraController.start();
     }
   }
 
-// Method to stop scanning
   void stopScanning() {
     if (isScanning) {
       isScanning = false;
-      // Call the stop() method of the scanner here
       cameraController.stop();
     }
   }
 
-// Method to handle scan completion
   void onScanComplete(String result) {
-    // Process the scan result here
-    // ...
-
-    // Set isScanning back to false
     isScanning = false;
   }
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController!.addListener(_handleTabSelection);
     // checkCameraPermission();
   }
@@ -110,32 +96,12 @@ class _QRHomePageState extends State<QRHomePage>
     super.dispose();
   }
 
-  // void _handleTabSelection() {
-  //   setState(() {
-  //     _selectedTabIndex = _tabController!.index;
-  //     if (_selectedTabIndex == 1) {
-  //       // Second tab is selected, check camera permission
-  //       // checkCameraPermission();
-  //       // context.read<PermissionBloc>().askPermission();
-  //       context.read<PermissionBloc>().add(RequestPermissionEvent());
-  //       _initializeMobileScannerController();
-  //     } else {
-  //       // First tab was unselected, so we need to re-initialize controller
-  //       cameraController.dispose();
-  //     }
-  //   });
-  // }
-
   void _handleTabSelection() {
     setState(() {
       _selectedTabIndex = _tabController!.index;
       if (_selectedTabIndex == 1) {
-        // Second tab is selected, check camera permission
-        // checkCameraPermission();
-        // context.read<PermissionBloc>().askPermission();
         context.read<PermissionBloc>().add(RequestPermissionEvent());
       } else {
-        // First tab was unselected, so we need to re-initialize the controller
         if (cameraController != null) {
           cameraController.dispose();
         }
@@ -197,7 +163,6 @@ class _QRHomePageState extends State<QRHomePage>
       ).toImageData(200);
       return qrCode!.buffer.asUint8List();
     } catch (e) {
-      print("Error generating QR code: $e");
       return null;
     }
   }
@@ -206,7 +171,6 @@ class _QRHomePageState extends State<QRHomePage>
     try {
       await Share.share(_generatedQRCode.toString());
     } catch (e) {
-      print("Error sharing QR code: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to share QR code")),
       );
@@ -234,7 +198,7 @@ class _QRHomePageState extends State<QRHomePage>
                   style: TextStyle(
                     fontSize: 18.0,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primaryColor,
+                    // color: AppColors.primaryColor,
                   ),
                 ),
                 const SizedBox(height: 16.0),
@@ -243,8 +207,8 @@ class _QRHomePageState extends State<QRHomePage>
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: AppColors.primaryColor),
-                    ),
+                        // borderSide: BorderSide(color: AppColors.primaryColor),
+                        ),
                     hintText: 'Enter text here',
                   ),
                 ),
@@ -262,7 +226,7 @@ class _QRHomePageState extends State<QRHomePage>
                     MaterialButton(
                       child: const Text(
                         'Generate',
-                        style: TextStyle(color: AppColors.primaryColor),
+                        // style: TextStyle(color: AppColors.primaryColor),
                       ),
                       onPressed: () {
                         String inputText = textController.text;
@@ -290,43 +254,75 @@ class _QRHomePageState extends State<QRHomePage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('QR Code Generator'),
-        backgroundColor: AppColors.primaryColor,
+        title: const Text(
+          'QR Code Generator',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
+            icon: const Icon(
+              Icons.settings,
+            ),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const AboutPage()),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
               );
             },
-            icon: const Icon(Icons.app_settings_alt_outlined),
-          )
+          ),
         ],
         bottom: TabBar(
           enableFeedback: true,
           controller: _tabController,
           labelStyle: const TextStyle(fontSize: 16),
           tabs: const [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.generating_tokens_rounded),
-                SizedBox(width: 5),
-                Tab(
-                  text: 'Generator',
-                ),
-              ],
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.generating_tokens_rounded,
+                  ),
+                  SizedBox(width: 5),
+                  Text(
+                    'Generator',
+                  ),
+                ],
+              ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.qr_code_scanner_rounded),
-                SizedBox(width: 5),
-                Tab(
-                  text: 'Scanner',
-                ),
-              ],
-            )
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.qr_code_scanner_rounded),
+                  SizedBox(width: 5),
+                  Text(
+                    'Scanner',
+                  ),
+                ],
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.text_snippet_rounded,
+                    // color: Colors.deepOrange,
+                  ),
+                  SizedBox(width: 5),
+                  Text(
+                    'Text Scanner',
+                    // style: TextStyle(
+                    //   color: Colors.deepOrange,
+                    // ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -335,7 +331,7 @@ class _QRHomePageState extends State<QRHomePage>
         children: [
           _buildGeneratorTab(),
           _buildScannerTab(),
-
+          _buildScannerTab(),
           // cameraView(),
         ],
       ),
@@ -363,7 +359,6 @@ class _QRHomePageState extends State<QRHomePage>
                   height: containerSize,
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: AppColors.primaryColor,
                       width: buttonBorderWidth,
                     ),
                     borderRadius: BorderRadius.circular(containerSize * 0.05),
@@ -378,7 +373,6 @@ class _QRHomePageState extends State<QRHomePage>
                       : Icon(
                           Icons.qr_code_scanner,
                           size: iconSize,
-                          color: AppColors.primaryColor,
                         ),
                 ),
                 const SizedBox(height: 20.0),
@@ -398,14 +392,21 @@ class _QRHomePageState extends State<QRHomePage>
                 const SizedBox(height: 30.0),
                 OutlinedButton(
                   onPressed: _showTextDialog,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primaryColor,
-                    side: BorderSide(
-                      color: AppColors.primaryColor,
-                      width: buttonBorderWidth,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    minimumSize: Size(constraints.maxWidth * 0.5, buttonHeight),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
                     ),
-                    fixedSize: Size(constraints.maxWidth * 0.5, buttonHeight),
                   ),
+                  // style: OutlinedButton.styleFrom(
+                  //   side: BorderSide(
+                  //     width: buttonBorderWidth,
+                  //   ),
+                  //   fixedSize: Size(constraints.maxWidth * 0.5, buttonHeight),
+                  // ),
                   child: Text(
                     'Generate QR Code',
                     style: TextStyle(fontSize: buttonFontSize),
@@ -472,22 +473,43 @@ class _QRHomePageState extends State<QRHomePage>
                   : state is PermissionPermanentlyDeniedState
                       ? state.permanentlyDeniedMessage
                       : "",
-              style: const TextStyle(
-                  fontSize: 26.0, fontStyle: FontStyle.italic, height: 1.5),
+              style: TextStyle(
+                fontSize: 26.0,
+                fontStyle: FontStyle.italic,
+                height: 1.5,
+                // color: Colors.black, // Set the text color
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16.0),
-            ElevatedButton(
-              style:
-                  ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
+            OutlinedButton(
+              style: ElevatedButton.styleFrom(
+                // backgroundColor:
+                //     Colors.deepOrange, // Set the button background color
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                      8.0), // Set the button border radius
+                ),
+              ),
               onPressed: () {
-                state is PermissionDeniedState
-                    ? context.read<PermissionBloc>().add(CheckPermissionEvent())
-                    : state is PermissionPermanentlyDeniedState
-                        ? openAppSettings()
-                        : state is PermissionGrantedState;
+                if (state is PermissionDeniedState) {
+                  context.read<PermissionBloc>().add(CheckPermissionEvent());
+                } else if (state is PermissionPermanentlyDeniedState) {
+                  openAppSettings();
+                }
               },
-              child: const Text('Open Settings'),
+              child: Text(
+                state is PermissionGrantedState
+                    ? 'Open Settings'
+                    : 'Check Permission',
+                style: TextStyle(
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white, // Set the button text color
+                ),
+              ),
             ),
           ],
         ),
@@ -501,11 +523,9 @@ class _QRHomePageState extends State<QRHomePage>
       caseSensitive: false,
       multiLine: true,
     );
-    log(qrCodeData);
     if (qrCodeData != '' && qrCodeData.isNotEmpty) {
       try {
         Match? match = wifiPattern.firstMatch(qrCodeData);
-        log(match.toString());
         if (match != null) {
           String ssid = match.group(1)!;
           String authenticationType = match.group(2)!;
@@ -516,27 +536,18 @@ class _QRHomePageState extends State<QRHomePage>
               password: password,
               authenticationType: authenticationType));
         } else if (match == null) {
-          // ScaffoldMessenger.of(context).showSnackBar(
-          //     const SnackBar(content: Text("Invalid Wi-Fi QR code")));
-          return (WifiInfo(
-              ssid: "",
-              password: "",
-              authenticationType:
-                  "")); // Return null if the Wi-Fi pattern is not found or qrCodeData is null/empty
+          return (WifiInfo(ssid: "", password: "", authenticationType: ""));
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Invalid Wi-Fi QR code")));
         }
       } catch (e) {
-        log('Error extracting Wi-Fi password: $e');
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Error extracting Wi-Fi password: QR")));
       }
     }
 
-    return (WifiInfo(
-        ssid: "",
-        password: "",
-        authenticationType:
-            "")); // Return null if the Wi-Fi pattern is not found or qrCodeData is null/empty
+    return (WifiInfo(ssid: "", password: "", authenticationType: ""));
   }
 
   BankInfo extractBankInfo(String qrCodeData) {
@@ -545,19 +556,15 @@ class _QRHomePageState extends State<QRHomePage>
         caseSensitive: false,
         multiLine: true);
 
-    log(qrCodeData);
     if (qrCodeData != '' && qrCodeData.isNotEmpty) {
       try {
         Match? match = bankInfoRegex.firstMatch(qrCodeData);
-        log(match.toString());
         if (match != null) {
           String? accountNumber = match.group(1)!;
           String? accountName = match.group(2)!;
           // String? bankCode = match.group(3)!;
           String? accountType = match.group(4)!;
-          print(accountNumber);
-          print(accountName);
-          print(accountType);
+
           return (BankInfo(
               accountNumber: accountNumber,
               accountName: accountName,
@@ -570,7 +577,8 @@ class _QRHomePageState extends State<QRHomePage>
               .showSnackBar(const SnackBar(content: Text("Invalid QR")));
         }
       } catch (e) {
-        log('Error extracting bank info: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Error extracting bank info: QR")));
       }
     }
 
@@ -582,7 +590,6 @@ class _QRHomePageState extends State<QRHomePage>
 
     BankInfo? bankInfo;
 
-    ///open screen
     if (!_screenOpened) {
       final code = barcode.barcodes[0].rawValue ?? "No code available";
 
@@ -642,7 +649,6 @@ class _QRHomePageState extends State<QRHomePage>
     return Column(
       children: [
         Flexible(
-          // height: MediaQuery.of(context).size.height / 2,
           child: MobileScanner(
             controller: cameraController,
             fit: BoxFit.cover,
@@ -652,130 +658,119 @@ class _QRHomePageState extends State<QRHomePage>
             },
           ),
         ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: Container(
-            alignment: Alignment.bottomCenter,
-            height: 100,
-            color: Colors.deepOrange,
-            child: Column(
-              children: [
-                Slider(
-                  value: _zoomFactor,
-                  onChanged: (value) {
-                    setState(() {
-                      _zoomFactor = value;
-                      cameraController.setZoomScale(value);
-                    });
+        Container(
+          height: 100,
+          decoration: BoxDecoration(
+            color: Colors.black, // Set the background color
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.3),
+                blurRadius: 5.0,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              IconButton(
+                color: Colors.white,
+                icon: ValueListenableBuilder(
+                  valueListenable: cameraController.torchState,
+                  builder: (context, state, child) {
+                    if (state == null) {
+                      return const Icon(
+                        Icons.flash_off,
+                        color: Colors.grey,
+                      );
+                    }
+                    switch (state) {
+                      case TorchState.off:
+                        return const Icon(
+                          Icons.flash_off,
+                          color: Colors.grey,
+                        );
+                      case TorchState.on:
+                        return const Icon(
+                          Icons.flash_on,
+                          color: Colors.yellow,
+                        );
+                    }
                   },
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    IconButton(
-                      color: Colors.white,
-                      icon: ValueListenableBuilder(
-                        valueListenable: cameraController.torchState,
-                        builder: (context, state, child) {
-                          if (state == null) {
-                            return const Icon(
-                              Icons.flash_off,
-                              color: Colors.grey,
-                            );
-                          }
-                          switch (state) {
-                            case TorchState.off:
-                              return const Icon(
-                                Icons.flash_off,
-                                color: Colors.grey,
-                              );
-                            case TorchState.on:
-                              return const Icon(
-                                Icons.flash_on,
-                                color: Colors.yellow,
-                              );
-                          }
-                        },
-                      ),
-                      iconSize: 32.0,
-                      onPressed: () {
-                        if (isStarted) {
-                          cameraController.toggleTorch();
-                        }
-                      },
-                    ),
-                    IconButton(
-                      color: Colors.white,
-                      icon: isStarted
-                          ? const Icon(Icons.stop)
-                          : const Icon(Icons.play_arrow),
-                      iconSize: 32.0,
-                      onPressed: _startOrStop,
-                    ),
-                    Center(
-                      child: SizedBox(
-                        // width: MediaQuery.of(context).size.width - 200,
-                        height: 40,
-                        child: FittedBox(
-                          child: Text(
-                            'Scan',
-                            overflow: TextOverflow.fade,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium!
-                                .copyWith(color: Colors.white),
-                          ),
-                        ),
+                iconSize: 32.0,
+                onPressed: () {
+                  if (isStarted) {
+                    cameraController.toggleTorch();
+                  }
+                },
+              ),
+              IconButton(
+                icon: isStarted
+                    ? const Icon(Icons.stop)
+                    : const Icon(Icons.play_arrow),
+                iconSize: 32.0,
+                onPressed: _startOrStop,
+                color: Colors.white, // Set the button color
+              ),
+              const Center(
+                child: SizedBox(
+                  height: 40,
+                  child: FittedBox(
+                    child: Text(
+                      'Scan',
+                      overflow: TextOverflow.fade,
+                      style: TextStyle(
+                        color: Colors.white, // Set the text color
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    IconButton(
-                      color: Colors.white,
-                      icon: const Icon(Icons.image),
-                      iconSize: 28.0,
-                      onPressed: () async {
-                        final ImagePicker picker = ImagePicker();
-                        // Pick an image
-                        final XFile? image = await picker.pickImage(
-                          source: ImageSource.gallery,
-                        );
-                        if (image != null) {
-                          if (await cameraController.analyzeImage(image.path)) {
-                            if (!mounted) return;
-                          } else {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('No QRCode found!'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                    ),
-                    IconButton(
-                      color: Colors.white,
-                      icon: ValueListenableBuilder(
-                        valueListenable: cameraController.cameraFacingState,
-                        builder: (context, state, child) {
-                          if (state == null) {
-                            return const Icon(Icons.camera_front);
-                          }
-                          switch (state) {
-                            case CameraFacing.front:
-                              return const Icon(Icons.camera_front);
-                            case CameraFacing.back:
-                              return const Icon(Icons.camera_rear);
-                          }
-                        },
-                      ),
-                      iconSize: 32.0,
-                      onPressed: () => cameraController.switchCamera(),
-                    ),
-                  ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.image),
+                iconSize: 28.0,
+                onPressed: () async {
+                  final ImagePicker picker = ImagePicker();
+                  final XFile? image = await picker.pickImage(
+                    source: ImageSource.gallery,
+                  );
+                  if (image != null) {
+                    if (await cameraController.analyzeImage(image.path)) {
+                      if (!mounted) return;
+                    } else {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('No QRCode found!'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+                color: Colors.white, // Set the button color
+              ),
+              IconButton(
+                icon: ValueListenableBuilder(
+                  valueListenable: cameraController.cameraFacingState,
+                  builder: (context, state, child) {
+                    if (state == null) {
+                      return const Icon(Icons.camera_front);
+                    }
+                    switch (state) {
+                      case CameraFacing.front:
+                        return const Icon(Icons.camera_front);
+                      case CameraFacing.back:
+                        return const Icon(Icons.camera_rear);
+                    }
+                  },
+                ),
+                iconSize: 32.0,
+                onPressed: () => cameraController.switchCamera(),
+                color: Colors.white, // Set the button color
+              ),
+            ],
           ),
         ),
       ],

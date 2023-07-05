@@ -1,7 +1,7 @@
 name: qrcodegenerator
 description: A QRCode Generator app.
 publish_to: "none"
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ">=3.0.2 <4.0.0"
@@ -19,7 +19,6 @@ dependencies:
   qr_flutter: ^4.1.0
   share_plus: ^7.0.2
   url_launcher: ^6.1.11
-  wifi_iot: ^0.3.18
 
 dev_dependencies:
   change_app_package_name: any

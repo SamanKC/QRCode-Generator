@@ -3,8 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qrcodegenerator/views/home/home_screen.dart';
 
 import 'bloc/permission_bloc.dart';
-import 'cubit/theme_cubit.dart';
-import 'cubit/theme_state.dart';
+import 'bloc/theme/theme_cubit.dart';
 
 void main() => runApp(const MyApp());
 
@@ -20,13 +19,15 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(create: (context) => ThemeCubit()),
       ],
-      child: BlocBuilder<ThemeCubit, ThemeState>(
-        builder: (context, state) {
+      child: BlocBuilder<ThemeCubit, AppTheme>(
+        builder: (context, theme) {
           return MaterialApp(
-            title: 'QR Scanner',
+            title: 'QRCode Generator',
             debugShowCheckedModeBanner: false,
             home: const QRHomePage(),
-            theme: state.themeData,
+            theme: getThemeData(theme).copyWith(
+              useMaterial3: true,
+            ),
           );
         },
       ),
