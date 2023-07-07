@@ -11,13 +11,14 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qrcodegenerator/models/bank_info.dart';
 import 'package:qrcodegenerator/models/wifi_info.dart';
-import 'package:qrcodegenerator/views/settings/settings_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../bloc/permission_bloc.dart';
 import '../../bloc/permission_event.dart';
 import '../../bloc/permission_state.dart';
 import '../../constants/app_colors.dart';
 import '../about/about_screen.dart';
+import '../settings/settings_screen.dart';
+import '../widgets/custom_snack_bar.dart';
 import '../widgets/scanner_error_widgert.dart';
 import 'foundcode_screen.dart';
 
@@ -32,6 +33,17 @@ class _QRHomePageState extends State<QRHomePage>
     with SingleTickerProviderStateMixin {
   final RefreshController _refreshController =
       RefreshController(initialRefresh: false);
+  String _generatedQRCode = '';
+  int _selectedTabIndex = 0;
+  TabController? _tabController;
+  Barcode? barCode;
+  BarcodeCapture? barCodeCapture;
+  MobileScannerArguments? arguments;
+  bool isStarted = true;
+  double _zoomFactor = 0.0;
+  bool _screenOpened = false;
+  MobileScannerController cameraController = MobileScannerController();
+  bool isScanning = false;
 
   void _onRefresh() async {
     await Future.delayed(const Duration(milliseconds: 1000));
@@ -45,23 +57,6 @@ class _QRHomePageState extends State<QRHomePage>
     if (mounted) setState(() {});
     _refreshController.loadComplete();
   }
-
-  String _generatedQRCode = '';
-  int _selectedTabIndex = 0;
-
-  TabController? _tabController;
-  Barcode? barCode;
-  BarcodeCapture? barCodeCapture;
-
-  MobileScannerArguments? arguments;
-
-  bool isStarted = true;
-  double _zoomFactor = 0.0;
-  bool _screenOpened = false;
-
-  MobileScannerController cameraController = MobileScannerController();
-
-  bool isScanning = false;
 
   void startScanning() {
     if (!isScanning) {
@@ -84,16 +79,8 @@ class _QRHomePageState extends State<QRHomePage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _tabController!.addListener(_handleTabSelection);
-    // checkCameraPermission();
-  }
-
-  @override
-  void dispose() {
-    cameraController.dispose();
-
-    super.dispose();
   }
 
   void _handleTabSelection() {
@@ -116,14 +103,13 @@ class _QRHomePageState extends State<QRHomePage>
     });
   }
 
-  void copyToClipboard(String text) {
+  void copyToClipboard(String text, ctx) {
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Text copied to clipboard")),
-    );
+
+    CustomSnackbar.show(ctx, 'Text copied to clipboard');
   }
 
-  Future<void> saveToGallery() async {
+  Future<void> saveToGallery(ctx) async {
     try {
       final qrImageData =
           await _generateQrImageData(_generatedQRCode.toString());
@@ -133,18 +119,12 @@ class _QRHomePageState extends State<QRHomePage>
         name: "QR_Code_${DateTime.now().millisecondsSinceEpoch}.jpg",
       );
       if (result['isSuccess']) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Image saved to gallery")),
-        );
+        CustomSnackbar.show(ctx, 'Image saved to gallery');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to save image")),
-        );
+        CustomSnackbar.show(ctx, 'Failed to save image');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to save image")),
-      );
+      CustomSnackbar.show(ctx, 'Failed to save image');
     }
   }
 
@@ -167,13 +147,11 @@ class _QRHomePageState extends State<QRHomePage>
     }
   }
 
-  void shareCode() async {
+  void shareCode(ctx) async {
     try {
       await Share.share(_generatedQRCode.toString());
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to share QR code")),
-      );
+      CustomSnackbar.show(ctx, 'Failed to share QR code');
     }
   }
 
@@ -198,7 +176,6 @@ class _QRHomePageState extends State<QRHomePage>
                   style: TextStyle(
                     fontSize: 18.0,
                     fontWeight: FontWeight.bold,
-                    // color: AppColors.primaryColor,
                   ),
                 ),
                 const SizedBox(height: 16.0),
@@ -206,9 +183,7 @@ class _QRHomePageState extends State<QRHomePage>
                   controller: textController,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
-                    focusedBorder: OutlineInputBorder(
-                        // borderSide: BorderSide(color: AppColors.primaryColor),
-                        ),
+                    focusedBorder: OutlineInputBorder(),
                     hintText: 'Enter text here',
                   ),
                 ),
@@ -226,18 +201,14 @@ class _QRHomePageState extends State<QRHomePage>
                     MaterialButton(
                       child: const Text(
                         'Generate',
-                        // style: TextStyle(color: AppColors.primaryColor),
                       ),
                       onPressed: () {
                         String inputText = textController.text;
                         Navigator.pop(context);
                         _generateQRCode(inputText);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('QRCode Generated!'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
+
+                        CustomSnackbar.show(context, 'QRCode Generated!',
+                            color: Colors.green);
                       },
                     ),
                   ],
@@ -305,24 +276,6 @@ class _QRHomePageState extends State<QRHomePage>
                 ],
               ),
             ),
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.text_snippet_rounded,
-                    // color: Colors.deepOrange,
-                  ),
-                  SizedBox(width: 5),
-                  Text(
-                    'Text Scanner',
-                    // style: TextStyle(
-                    //   color: Colors.deepOrange,
-                    // ),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -331,8 +284,6 @@ class _QRHomePageState extends State<QRHomePage>
         children: [
           _buildGeneratorTab(),
           _buildScannerTab(),
-          _buildScannerTab(),
-          // cameraView(),
         ],
       ),
     );
@@ -401,12 +352,6 @@ class _QRHomePageState extends State<QRHomePage>
                       borderRadius: BorderRadius.circular(8.0),
                     ),
                   ),
-                  // style: OutlinedButton.styleFrom(
-                  //   side: BorderSide(
-                  //     width: buttonBorderWidth,
-                  //   ),
-                  //   fixedSize: Size(constraints.maxWidth * 0.5, buttonHeight),
-                  // ),
                   child: Text(
                     'Generate QR Code',
                     style: TextStyle(fontSize: buttonFontSize),
@@ -417,16 +362,20 @@ class _QRHomePageState extends State<QRHomePage>
                   children: [
                     IconButton(
                       onPressed: () {
-                        copyToClipboard(_generatedQRCode.toString());
+                        copyToClipboard(_generatedQRCode.toString(), context);
                       },
                       icon: const Icon(Icons.copy),
                     ),
                     IconButton(
-                      onPressed: saveToGallery,
+                      onPressed: () {
+                        saveToGallery(context);
+                      },
                       icon: const Icon(Icons.save),
                     ),
                     IconButton(
-                      onPressed: shareCode,
+                      onPressed: () {
+                        shareCode(context);
+                      },
                       icon: const Icon(Icons.share),
                     ),
                   ],
@@ -473,7 +422,7 @@ class _QRHomePageState extends State<QRHomePage>
                   : state is PermissionPermanentlyDeniedState
                       ? state.permanentlyDeniedMessage
                       : "",
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 26.0,
                 fontStyle: FontStyle.italic,
                 height: 1.5,
@@ -504,7 +453,7 @@ class _QRHomePageState extends State<QRHomePage>
                 state is PermissionGrantedState
                     ? 'Open Settings'
                     : 'Check Permission',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16.0,
                   fontWeight: FontWeight.bold,
                   color: Colors.white, // Set the button text color
@@ -538,12 +487,10 @@ class _QRHomePageState extends State<QRHomePage>
         } else if (match == null) {
           return (WifiInfo(ssid: "", password: "", authenticationType: ""));
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Invalid Wi-Fi QR code")));
+          CustomSnackbar.show(context, 'Invalid Wi-Fi QR code');
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Error extracting Wi-Fi password: QR")));
+        CustomSnackbar.show(context, 'Error extracting Wi-Fi password: QR');
       }
     }
 
@@ -573,12 +520,10 @@ class _QRHomePageState extends State<QRHomePage>
           return (BankInfo(
               accountName: "", accountNumber: "", accountType: ""));
         } else {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text("Invalid QR")));
+          CustomSnackbar.show(context, 'Invalid QR');
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Error extracting bank info: QR")));
+        CustomSnackbar.show(context, 'Error extracting bank info: QR');
       }
     }
 
@@ -599,12 +544,7 @@ class _QRHomePageState extends State<QRHomePage>
 
       bankInfo = extractBankInfo(code.toString());
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('QRCode found!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      CustomSnackbar.show(context, 'QRCode Generated!', color: Colors.green);
 
       Navigator.push(
         context,
@@ -625,7 +565,7 @@ class _QRHomePageState extends State<QRHomePage>
     _screenOpened = false;
   }
 
-  void _startOrStop() {
+  void _startOrStop(ctx) {
     try {
       if (isStarted) {
         cameraController.stop();
@@ -636,12 +576,7 @@ class _QRHomePageState extends State<QRHomePage>
         isStarted = !isStarted;
       });
     } on Exception catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Something went wrong! $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CustomSnackbar.show(ctx, 'Something went wrong! $e', color: Colors.red);
     }
   }
 
@@ -709,7 +644,9 @@ class _QRHomePageState extends State<QRHomePage>
                     ? const Icon(Icons.stop)
                     : const Icon(Icons.play_arrow),
                 iconSize: 32.0,
-                onPressed: _startOrStop,
+                onPressed: () {
+                  _startOrStop(context);
+                },
                 color: Colors.white, // Set the button color
               ),
               const Center(
@@ -740,12 +677,9 @@ class _QRHomePageState extends State<QRHomePage>
                       if (!mounted) return;
                     } else {
                       if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('No QRCode found!'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+
+                      CustomSnackbar.show(context, 'No QRCode found!',
+                          color: Colors.red);
                     }
                   }
                 },
@@ -775,5 +709,12 @@ class _QRHomePageState extends State<QRHomePage>
         ),
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    cameraController.dispose();
+
+    super.dispose();
   }
 }
