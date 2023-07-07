@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:qrcodegenerator/views/home/home_screen.dart';
-
+import 'package:qrcodegenerator/presentation/home/home_screen.dart';
 import 'bloc/permission_bloc.dart';
 import 'bloc/theme/theme_cubit.dart';
 
