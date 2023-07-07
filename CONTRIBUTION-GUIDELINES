@@ -1,0 +1,34 @@
+## Contribution Guidelines
+
+Thank you for considering contributing to the QRCode Generator app! To ensure a smooth collaboration process, please follow these guidelines:
+
+### Issue Reporting
+
+- Before submitting a new issue, please check the existing issues to avoid duplicates.
+- Clearly describe the problem or feature request, providing as much detail as possible.
+- Include steps to reproduce the issue if applicable.
+
+### Pull Requests
+
+- Fork the repository and create a new branch for your contribution.
+- Ensure that your code follows the project's coding style and conventions.
+- Include tests if applicable to validate your changes.
+- Provide a clear and concise description of your changes in the pull request.
+- Be responsive to feedback and address any requested changes promptly.
+
+### Code Style and Conventions
+
+- Follow the Flutter style guide and conventions for writing clean and readable code.
+- Use meaningful variable and function names.
+- Include comments to explain complex logic or provide additional context.
+- Format your code properly and adhere to the existing code formatting.
+
+### Communication
+
+- Engage in respectful and constructive discussions with other contributors.
+- Be open to feedback and suggestions, and provide feedback to others when necessary.
+- Use clear and concise language in all communications.
+- Be patient and understanding with response times.
+
+By contributing to the QRCode Generator app, you agree to adhere to the above guidelines and the project's code of conduct.
+
