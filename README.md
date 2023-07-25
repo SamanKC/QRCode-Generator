@@ -48,3 +48,6 @@ The QRCode Generator app is open source and available under the [MIT License](LI
 ## Contact
 
 For any inquiries or further information, please contact [Saman KC](mailto:samankc.np@gmail.com).
+
+<a href="https://www.buymeacoffee.com/samankc" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
